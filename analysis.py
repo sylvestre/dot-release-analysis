@@ -13,6 +13,7 @@ import sys
 
 HOW_MANY_YEARS = 1
 
+
 def downloadFiles():
     commonUrl = "https://nucleus.mozilla.org/rna/"
 
@@ -25,6 +26,7 @@ def downloadFiles():
     releasesData = json.loads(response.read())
 
     return notesData, releasesData
+
 
 def selectDate(releaseDate):
     releaseDate = dateutil.parser.parse(releaseDate)
