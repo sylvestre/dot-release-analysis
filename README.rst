@@ -8,4 +8,4 @@ and generate a csv file with the list of revisions
   pip install -r requirements.txt
   wget -O notes.json "https://nucleus.mozilla.org/rna/notes/?format=json"
   wget -O releases.json "https://nucleus.mozilla.org/rna/releases/?format=json"
-  python analysis.py
+  python analysis.py > export.csv

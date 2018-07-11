@@ -9,6 +9,7 @@ import dateutil.parser
 from dateutil.relativedelta import relativedelta
 import pytz
 from libmozdata.bugzilla import Bugzilla
+import sys
 
 HOW_MANY_YEARS = 1
 
@@ -79,12 +80,12 @@ with open('releases.json') as f:
                     if n['bug'] is None:
                         if  "Reference link" not in n['note']  and "security fix" not in n['note'].lower():
                             i = i + 1
-                            print(str(n['id']) + " bug not set")
+                            sys.stderr.write(str(n['id']) + " bug not set" + "\n")
                     else:
                         if r['version'] not in bugs:
                             bugs[r['version']] = ()
                         bugs[r['version']] += n['bug'],
 
 getCommitByBugId(bugs)
-print("Bug not set = " + str(i))
-print("Total       = " + str(t))
+sys.stderr.write("Bug not set = " + str(i) + "\n")
+sys.stderr.write("Total       = " + str(t) + "\n")
