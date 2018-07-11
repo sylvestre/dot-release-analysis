@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import urllib
 import json
 from datetime import datetime
 import dateutil.parser
@@ -12,6 +13,18 @@ import sys
 
 HOW_MANY_YEARS = 1
 
+def downloadFiles():
+    commonUrl = "https://nucleus.mozilla.org/rna/"
+
+    noteUrl = commonUrl + "notes/?format=json"
+    response = urllib.urlopen(noteUrl)
+    notesData = json.loads(response.read())
+
+    releaseUrl = commonUrl + "releases/?format=json"
+    response = urllib.urlopen(releaseUrl)
+    releasesData = json.loads(response.read())
+
+    return notesData, releasesData
 
 def selectDate(releaseDate):
     releaseDate = dateutil.parser.parse(releaseDate)
@@ -19,10 +32,10 @@ def selectDate(releaseDate):
     return releaseDate > fromWhen
 
 
-def isFirefoxDotRelease(r):
+def isProductDotRelease(r, product):
     """ Filter only the fx dot releases
     """
-    return r['product'] == "Firefox" and r['channel'] == "Release" and r['version'].count('.') > 1
+    return r['product'] in product and r['channel'] == "Release" and r['version'].count('.') > 1
 
 
 def validNote(note):
@@ -68,33 +81,30 @@ def getCommitByBugId(dotreleases):
     return revisions
 
 
-def analyzeFiles():
-    with open('notes.json') as f0:
-        notesData = json.load(f0)
+def analyzeFiles(product):
+    notesData, releaseData = downloadFiles()
     i = 0
     t = 0
     bugs = {}
-    with open('releases.json') as f:
-        releaseData = json.load(f)
-        for r in releaseData:
-            if selectDate(r['release_date']) and isFirefoxDotRelease(r):
-                releaseId = r['url']
-                for n in notesData:
-                    if releaseId in list(n['releases']):
-                        t = t + 1
-                        if n['bug'] is None:
-                            if validNote(n['note']):
-                                i = i + 1
-                                sys.stderr.write(str(n['id']) + " bug not set" + "\n")
-                        else:
-                            if r['version'] not in bugs:
-                                bugs[r['version']] = ()
-                            bugs[r['version']] += n['bug'],
+    for r in releaseData:
+        if selectDate(r['release_date']) and isProductDotRelease(r, product):
+            releaseId = r['url']
+            for n in notesData:
+                if releaseId in list(n['releases']):
+                    t = t + 1
+                    if n['bug'] is None:
+                        if validNote(n['note']):
+                            i = i + 1
+                            sys.stderr.write("https://nucleus.mozilla.org/admin/rna/note/" + str(n['id']) + "/ bug not set" + "\n")
+                    else:
+                        if r['version'] not in bugs:
+                            bugs[r['version']] = ()
+                        bugs[r['version']] += n['bug'],
     return bugs, i, t
 
 
 if __name__ == "__main__":
-    bugs, nbUnset, total = analyzeFiles()
+    bugs, nbUnset, total = analyzeFiles(['Firefox'])
     revisions = getCommitByBugId(bugs)
 
     for bug, data in revisions.items():
