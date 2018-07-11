@@ -3,8 +3,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
-from pprint import pprint
-from datetime import date, datetime
+from datetime import datetime
 import dateutil.parser
 from dateutil.relativedelta import relativedelta
 import pytz
@@ -13,20 +12,22 @@ import sys
 
 HOW_MANY_YEARS = 1
 
+
 def selectDate(releaseDate):
-    releaseDate =  dateutil.parser.parse(releaseDate)
-    fromWhen = pytz.utc.localize(datetime.now()  - relativedelta(years=HOW_MANY_YEARS))
+    releaseDate = dateutil.parser.parse(releaseDate)
+    fromWhen = pytz.utc.localize(datetime.now() - relativedelta(years=HOW_MANY_YEARS))
     return releaseDate > fromWhen
+
 
 def isFirefoxDotRelease(r):
     return r['product'] == "Firefox" and r['channel'] == "Release" and r['version'].count('.') > 1
+
 
 def findVersionFromBug(table, search_bug):
     for v, bugs in table.iteritems():    # for name, age in list.items():  (for Python 3.x)
         for b in bugs:
             if str(b) == str(search_bug):
                 return v
-
 
 
 def getCommitByBugId(dotreleases):
@@ -63,11 +64,12 @@ def getCommitByBugId(dotreleases):
 
         print(findVersionFromBug(dotreleases, bug) + ";" + data['title'] + ";https://bugzilla.mozilla.org/" + bug + ";" + revs)
 
+
 with open('notes.json') as f0:
     notesData = json.load(f0)
 i = 0
 t = 0
-bugs={}
+bugs = {}
 with open('releases.json') as f:
     releaseData = json.load(f)
     for r in releaseData:
@@ -78,7 +80,7 @@ with open('releases.json') as f:
                 if releaseId in list(n['releases']):
                     t = t + 1
                     if n['bug'] is None:
-                        if  "Reference link" not in n['note']  and "security fix" not in n['note'].lower():
+                        if "Reference link" not in n['note'] and "security fix" not in n['note'].lower():
                             i = i + 1
                             sys.stderr.write(str(n['id']) + " bug not set" + "\n")
                     else:
