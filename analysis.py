@@ -20,10 +20,18 @@ def selectDate(releaseDate):
 
 
 def isFirefoxDotRelease(r):
+    """ Filter only the fx dot releases
+    """
     return r['product'] == "Firefox" and r['channel'] == "Release" and r['version'].count('.') > 1
 
 
+def validNote(note):
+    return "Reference link" not in note and "security fix" not in note.lower()
+
+
 def findVersionFromBug(table, search_bug):
+    """ Find the version in which the bug was fixed
+    """
     for v, bugs in table.iteritems():
         for b in bugs:
             if str(b) == str(search_bug):
@@ -57,36 +65,44 @@ def getCommitByBugId(dotreleases):
              commenthandler=comment_handler,
              commentdata=revisions,
              comment_include_fields=['text']).get_data().wait()
+    return revisions
+
+
+def analyzeFiles():
+    with open('notes.json') as f0:
+        notesData = json.load(f0)
+    i = 0
+    t = 0
+    bugs = {}
+    with open('releases.json') as f:
+        releaseData = json.load(f)
+        for r in releaseData:
+            if selectDate(r['release_date']) and isFirefoxDotRelease(r):
+                releaseId = r['url']
+                for n in notesData:
+                    if releaseId in list(n['releases']):
+                        t = t + 1
+                        if n['bug'] is None:
+                            if validNote(n['note']):
+                                i = i + 1
+                                sys.stderr.write(str(n['id']) + " bug not set" + "\n")
+                        else:
+                            if r['version'] not in bugs:
+                                bugs[r['version']] = ()
+                            bugs[r['version']] += n['bug'],
+    return bugs, i, t
+
+
+if __name__ == "__main__":
+    bugs, nbUnset, total = analyzeFiles()
+    revisions = getCommitByBugId(bugs)
+
     for bug, data in revisions.items():
         revs = ""
         for r in data['revs']:
             revs += "https://hg.mozilla.org/mozilla-central/rev/" + r + ";"
 
-        print(findVersionFromBug(dotreleases, bug) + ";" + data['title'] + ";https://bugzilla.mozilla.org/" + bug + ";" + revs)
+        print(findVersionFromBug(bugs, bug) + ";" + data['title'] + ";https://bugzilla.mozilla.org/" + bug + ";" + revs)
 
-
-with open('notes.json') as f0:
-    notesData = json.load(f0)
-i = 0
-t = 0
-bugs = {}
-with open('releases.json') as f:
-    releaseData = json.load(f)
-    for r in releaseData:
-        if selectDate(r['release_date']) and isFirefoxDotRelease(r):
-            releaseId = r['url']
-            for n in notesData:
-                if releaseId in list(n['releases']):
-                    t = t + 1
-                    if n['bug'] is None:
-                        if "Reference link" not in n['note'] and "security fix" not in n['note'].lower():
-                            i = i + 1
-                            sys.stderr.write(str(n['id']) + " bug not set" + "\n")
-                    else:
-                        if r['version'] not in bugs:
-                            bugs[r['version']] = ()
-                        bugs[r['version']] += n['bug'],
-
-getCommitByBugId(bugs)
-sys.stderr.write("Bug not set = " + str(i) + "\n")
-sys.stderr.write("Total       = " + str(t) + "\n")
+    sys.stderr.write("Bug not set = " + str(nbUnset) + "\n")
+    sys.stderr.write("Total       = " + str(total) + "\n")
