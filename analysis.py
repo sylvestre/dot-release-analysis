@@ -24,7 +24,7 @@ def isFirefoxDotRelease(r):
 
 
 def findVersionFromBug(table, search_bug):
-    for v, bugs in table.iteritems():    # for name, age in list.items():  (for Python 3.x)
+    for v, bugs in table.iteritems():
         for b in bugs:
             if str(b) == str(search_bug):
                 return v
@@ -76,7 +76,6 @@ with open('releases.json') as f:
         if selectDate(r['release_date']) and isFirefoxDotRelease(r):
             releaseId = r['url']
             for n in notesData:
-
                 if releaseId in list(n['releases']):
                     t = t + 1
                     if n['bug'] is None:
